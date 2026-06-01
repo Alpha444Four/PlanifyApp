@@ -1,0 +1,21 @@
+node_modules
+dist
+build
+.next
+.vercel
+.env
+.env.local
+.env.*.local
+*.local
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Server database (local dev)
+server/data/*.db
+server/data/*.db-*
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+*.log
