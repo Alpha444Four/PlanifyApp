@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import type { AuthStatus, User } from "@/types/auth";
 import * as authService from "@/services/auth-service";
+import { isSupabaseConfigured } from "@/lib/env";
+import { syncMetricsToUserStore } from "@/services/metrics-service";
 import { ensureProfile } from "@/services/user-service";
 import { useNotificationStore } from "@/store/notification-store";
 import { useUserDataStore } from "@/store/user-data-store";
@@ -30,7 +32,8 @@ interface AuthState {
     name: string,
     email: string,
     password: string,
-  ) => Promise<{ ok: boolean; error?: string }>;
+    phone?: string,
+  ) => Promise<{ ok: boolean; error?: string; needsVerification?: boolean }>;
   signInWithGoogle: () => Promise<{ ok: boolean; error?: string }>;
   signInWithApple: () => Promise<{ ok: boolean; error?: string }>;
   signOut: () => Promise<void>;
@@ -43,10 +46,13 @@ interface AuthState {
 function activate(user: User): void {
   ensureProfile(user);
   useUserDataStore.getState().setActiveUser(user.id);
+  if (isSupabaseConfigured() && user.emailVerified) {
+    void syncMetricsToUserStore(user.id);
+  }
   void useNotificationStore.getState().refresh();
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   status: "loading",
 
@@ -74,9 +80,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     return { ok: true };
   },
 
-  signUp: async (name, email, password) => {
-    const result = await authService.signUpWithEmail(name, email, password);
+  signUp: async (name, email, password, phone) => {
+    const result = await authService.signUpWithEmail(name, email, password, phone);
     if (!result.ok) return { ok: false, error: result.error };
+    if (!result.user.emailVerified) {
+      useUserDataStore.getState().setActiveUser(result.user.id);
+      set({ user: result.user, status: "authenticated" });
+      return { ok: true, needsVerification: true };
+    }
     activate(result.user);
     set({ user: result.user, status: "authenticated" });
     return { ok: true };
@@ -123,8 +134,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     return { ok: true };
   },
 
-  resendConfirmation: async () => {
-    const user = useAuthStore.getState().user;
+  resendConfirmation: async (): Promise<{ ok: boolean; error?: string }> => {
+    const user = get().user;
     if (!user?.email) return { ok: false, error: "No email on file." };
     const result = await authService.sendConfirmationEmail(user.email);
     return result.ok ? { ok: true } : { ok: false, error: result.error };

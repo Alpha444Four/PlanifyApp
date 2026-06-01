@@ -4,6 +4,8 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import path from "node:path";
 
 export default defineConfig({
+  // Accept VITE_* and NEXT_PUBLIC_* (Vercel dashboard naming)
+  envPrefix: ["VITE_", "NEXT_PUBLIC_"],
   plugins: [react(), tsconfigPaths()],
   server: {
     // Listen on 127.0.0.1 and ::1 — Windows often refuses IPv4-only URLs otherwise.

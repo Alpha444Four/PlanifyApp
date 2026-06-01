@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/store/auth-store";
 import { useI18n } from "@/hooks/use-i18n";
 import { zodResolver } from "@/lib/zod-resolver";
+import { isSupabaseConfigured } from "@/lib/env";
 
 const schema = z.object({
   email: z.string().min(1, "Email is required").email("Enter a valid email address"),
@@ -29,6 +30,9 @@ export default function LoginPage() {
   const { t } = useI18n();
   const { signIn, signInWithGoogle, signInWithApple } = useAuth();
   const [oauthLoading, setOauthLoading] = useState<OAuth>(null);
+  const [remember, setRemember] = useState(
+    () => localStorage.getItem("planify:remember") === "1",
+  );
 
   const from = (location.state as { from?: { pathname: string } } | null)?.from
     ?.pathname;
@@ -45,6 +49,7 @@ export default function LoginPage() {
   const onSubmit = async (values: FormValues) => {
     const result = await signIn(values.email, values.password);
     if (result.ok) {
+      localStorage.setItem("planify:remember", remember ? "1" : "0");
       toast({ title: t("dashboard.welcomeBack"), variant: "success" });
       navigate(from ?? "/app", { replace: true });
     } else {
@@ -61,10 +66,7 @@ export default function LoginPage() {
     const action = provider === "google" ? signInWithGoogle : signInWithApple;
     const result = await action();
     setOauthLoading(null);
-    if (result.ok) {
-      toast({ title: t("auth.signedIn"), variant: "success" });
-      navigate(from ?? "/app", { replace: true });
-    } else {
+    if (!result.ok) {
       toast({
         title: `${provider === "google" ? "Google" : "Apple"} sign in failed`,
         description: result.error,
@@ -91,6 +93,12 @@ export default function LoginPage() {
         </>
       }
     >
+      {!isSupabaseConfigured() && (
+        <p className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+          Configure Supabase in Vercel for production login.
+        </p>
+      )}
+
       <div className="space-y-3">
         <OAuthButton
           provider="google"
@@ -159,6 +167,16 @@ export default function LoginPage() {
             </p>
           )}
         </div>
+
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+            className="rounded border-border"
+          />
+          Remember me on this device
+        </label>
 
         <Button
           type="submit"

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
-import { useRealApi } from "@/lib/env";
+import { isSupabaseConfigured } from "@/lib/env";
+import { refreshSessionFromUrl } from "@/services/auth-service";
 
 import { Loader2, Mail, Sparkles } from "lucide-react";
 
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 
 import { useToast } from "@/components/ui/toast";
 
-import { useAuth } from "@/store/auth-store";
+import { useAuth, useAuthStore } from "@/store/auth-store";
 
 import { useI18n } from "@/hooks/use-i18n";
 
@@ -30,25 +31,41 @@ export default function VerifyEmailPage() {
 
   const [params] = useSearchParams();
 
-  const tokenFromUrl = params.get("token");
+  const codeFromUrl = params.get("code") ?? params.get("token");
 
   const [loading, setLoading] = useState(false);
 
   const [resending, setResending] = useState(false);
 
-  const realApi = useRealApi();
+  const supabaseMode = isSupabaseConfigured();
 
 
 
   useEffect(() => {
 
-    if (!tokenFromUrl) return;
+    if (!codeFromUrl || !supabaseMode) return;
 
     void (async () => {
 
       setLoading(true);
 
-      const result = await verifyEmail(tokenFromUrl);
+      const refreshed = await refreshSessionFromUrl();
+
+      if (refreshed?.emailVerified) {
+
+        useAuthStore.getState().setUser(refreshed);
+
+        toast({ title: t("auth.emailConfirmed"), variant: "success" });
+
+        navigate("/app", { replace: true });
+
+        setLoading(false);
+
+        return;
+
+      }
+
+      const result = await verifyEmail(codeFromUrl);
 
       setLoading(false);
 
@@ -66,7 +83,7 @@ export default function VerifyEmailPage() {
 
     })();
 
-  }, [tokenFromUrl, verifyEmail, navigate, toast, t]);
+  }, [codeFromUrl, supabaseMode, verifyEmail, navigate, toast, t]);
 
 
 
@@ -74,7 +91,7 @@ export default function VerifyEmailPage() {
 
     setLoading(true);
 
-    const result = await verifyEmail(tokenFromUrl ?? undefined);
+    const result = await verifyEmail(codeFromUrl ?? undefined);
 
     setLoading(false);
 
@@ -176,7 +193,7 @@ export default function VerifyEmailPage() {
 
         <p className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
 
-          {realApi ? t("auth.confirmEmailApiDev") : t("auth.confirmEmailDemo")}
+          {supabaseMode ? "Check your inbox for the Supabase confirmation link." : t("auth.confirmEmailDemo")}
 
         </p>
 
@@ -202,7 +219,7 @@ export default function VerifyEmailPage() {
 
               <Sparkles className="h-4 w-4" />
 
-              {realApi ? t("auth.confirmBtn") : t("auth.confirmBtnDemo")}
+              {supabaseMode ? t("auth.confirmBtn") : t("auth.confirmBtnDemo")}
 
             </>
 

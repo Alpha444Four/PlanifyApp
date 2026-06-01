@@ -1,22 +1,8 @@
 import type { User } from "@/types/auth";
+import { isSupabaseConfigured } from "@/lib/env";
+import { updateProfileFields } from "@/services/profile-service";
 import { useUserDataStore } from "@/store/user-data-store";
 
-/**
- * USER / PROFILE SERVICE — Planify (MOCK)
- * ---------------------------------------------------------------------------
- * Profile persistence + the "create a zeroed data row on first signup" seam.
- *
- * Today the profile fields live alongside the account in localStorage and the
- * per-user stats live in the user-data store. In production this maps to a
- * Supabase `profiles` table (RLS-scoped by auth.uid()):
- *   getProfile     -> select * from profiles where id = auth.uid()
- *   ensureProfile  -> insert ... on conflict do nothing (zeroed stats)
- *   updateProfile  -> update profiles set ... where id = auth.uid()
- * ---------------------------------------------------------------------------
- */
-
-// Same store auth-service writes; kept as a local const to avoid a hard import
-// cycle. Both files are the DEMO persistence layer and share this key.
 const ACCOUNTS_KEY = "planify:accounts";
 const SESSION_KEY = "planify:session";
 
@@ -44,18 +30,35 @@ export function getProfile(userId: string): User | null {
   return user;
 }
 
-/**
- * Creates the default per-user data row (zeroed stats) on first signup.
- * Idempotent: existing users keep their data.
- */
 export function ensureProfile(user: User): void {
   useUserDataStore.getState().ensureUser(user.id);
 }
 
-export function updateProfile(
+export async function updateProfile(
   userId: string,
-  patch: Partial<Pick<User, "name" | "avatarUrl">>,
-): User | null {
+  patch: Partial<Pick<User, "name" | "avatarUrl" | "phone" | "phoneVerified">>,
+): Promise<User | null> {
+  if (isSupabaseConfigured()) {
+    const row = await updateProfileFields(userId, {
+      full_name: patch.name,
+      avatar_url: patch.avatarUrl,
+      phone: patch.phone,
+      phone_verified: patch.phoneVerified,
+    });
+    return {
+      id: row.id,
+      name: row.full_name ?? "",
+      email: row.email ?? "",
+      phone: row.phone ?? undefined,
+      phoneVerified: row.phone_verified,
+      avatarUrl: row.avatar_url ?? undefined,
+      provider: "email",
+      createdAt: row.created_at,
+      emailVerified: true,
+      onboardingCompleted: row.onboarding_completed,
+    };
+  }
+
   if (typeof window === "undefined") return null;
   const accounts = readAccounts();
   const idx = accounts.findIndex((a) => a.id === userId);
@@ -67,7 +70,6 @@ export function updateProfile(
 
   const { passwordHash: _passwordHash, ...user } = updated;
   void _passwordHash;
-  // Keep the active session in sync so the UI reflects edits immediately.
   const session = safeParse<User | null>(localStorage.getItem(SESSION_KEY), null);
   if (session?.id === userId) {
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));

@@ -22,11 +22,14 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  phoneVerified?: boolean;
   avatarUrl?: string;
   provider: AuthProvider;
   createdAt: string;
   /** Email/password accounts must verify before full dashboard access. OAuth is auto-verified. */
   emailVerified: boolean;
+  onboardingCompleted?: boolean;
 }
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";

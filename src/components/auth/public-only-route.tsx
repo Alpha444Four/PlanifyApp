@@ -9,8 +9,12 @@ import { useAuthStore } from "@/store/auth-store";
  */
 export function PublicOnlyRoute({ children }: { children: ReactNode }) {
   const status = useAuthStore((s) => s.status);
+  const user = useAuthStore((s) => s.user);
 
   if (status === "authenticated") {
+    if (user && user.provider === "email" && !user.emailVerified) {
+      return <Navigate to="/verify-email" replace />;
+    }
     return <Navigate to="/app" replace />;
   }
 

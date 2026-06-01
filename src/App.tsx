@@ -24,6 +24,8 @@ import LoginPage from "@/pages/login";
 import SignupPage from "@/pages/signup";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import VerifyEmailPage from "@/pages/verify-email";
+import AuthCallbackPage from "@/pages/auth-callback";
+import ResetPasswordPage from "@/pages/reset-password";
 import WaterPage from "@/pages/water";
 import SleepPage from "@/pages/sleep-page";
 import StepsPage from "@/pages/steps";
@@ -68,6 +70,8 @@ export default function App() {
       />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Protected app area */}
       <Route

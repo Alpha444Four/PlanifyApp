@@ -122,6 +122,16 @@ interface UserDataState {
   setActiveUser: (userId: string | null) => void;
   /** Create a zeroed data bag for a user if one does not exist yet. */
   ensureUser: (userId: string) => void;
+  /** Apply server daily_metrics row into local daily stats (Supabase sync). */
+  patchDailyFromServer: (
+    userId: string,
+    patch: {
+      waterMl?: number;
+      steps?: number;
+      trainingMinutes?: number;
+      sleepHours?: number;
+    },
+  ) => void;
   /** Read the active user's data (empty bag if none). */
   getActiveData: () => UserData;
 
@@ -209,6 +219,27 @@ export const useUserDataStore = create<UserDataState>()(
                 },
               },
         );
+      },
+
+      patchDailyFromServer: (userId, patch) => {
+        set((state) => {
+          const current = state.dataByUser[userId] ?? createEmptyUserData();
+          return {
+            dataByUser: {
+              ...state.dataByUser,
+              [userId]: finalize({
+                ...current,
+                daily: {
+                  ...current.daily,
+                  waterMl: patch.waterMl ?? current.daily.waterMl,
+                  steps: patch.steps ?? current.daily.steps,
+                  trainingMinutes: patch.trainingMinutes ?? current.daily.trainingMinutes,
+                  sleepHours: patch.sleepHours ?? current.daily.sleepHours,
+                },
+              }),
+            },
+          };
+        });
       },
 
       getActiveData: () => {

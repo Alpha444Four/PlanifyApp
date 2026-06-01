@@ -21,6 +21,8 @@ import { EMPTY_USER_DATA, useUserDataStore } from "@/store/user-data-store";
 import { selectCounters } from "@/services/dashboard-service";
 
 import { updateProfile } from "@/services/user-service";
+import { PhoneVerificationCard } from "@/components/profile/phone-verification";
+import { isSupabaseConfigured } from "@/lib/env";
 
 import { useLogout } from "@/hooks/use-logout";
 
@@ -150,24 +152,15 @@ export default function ProfilePage() {
 
 
 
-  const save = () => {
-
+  const save = async () => {
     if (!user) return;
-
-    const updated = updateProfile(user.id, {
-
+    const updated = await updateProfile(user.id, {
       name: name.trim() || user.name,
-
       ...(avatarPreset ? {} : { avatarUrl }),
-
     });
-
     if (updated) setUser(updated);
-
     updatePreferences({ goals, fitnessLevel, mainGoal, avatarPreset, languagePref });
-
     toast({ title: t("profilePage.saved"), variant: "success" });
-
   };
 
 
@@ -258,7 +251,7 @@ export default function ProfilePage() {
 
         action={
 
-          <Button variant="gradient" size="sm" onClick={save}>
+          <Button variant="gradient" size="sm" onClick={() => void save()}>
 
             <Save className="h-4 w-4" />
 
@@ -271,6 +264,17 @@ export default function ProfilePage() {
       />
 
 
+
+      {isSupabaseConfigured() && user && (
+        <div className="flex flex-wrap gap-2 text-sm">
+          <Badge variant={user.emailVerified ? "default" : "secondary"}>
+            Email {user.emailVerified ? "verified" : "pending"}
+          </Badge>
+          <Badge variant="secondary">Joined {memberSince(user.createdAt)}</Badge>
+        </div>
+      )}
+
+      {isSupabaseConfigured() && <PhoneVerificationCard />}
 
       <Card>
 
