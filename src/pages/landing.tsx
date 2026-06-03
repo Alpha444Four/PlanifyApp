@@ -76,12 +76,13 @@ export default function LandingPage() {
         >
           <motion.div
             variants={fade}
-            className="mx-auto mb-8 flex justify-center"
+            className="mx-auto mb-8 flex justify-center overflow-visible px-2"
           >
             <PlanifyLogo
               variant="lockup"
               size="xl"
               slogan={t("brand.sloganFull")}
+              className="flex-col items-center text-center"
             />
           </motion.div>
           <motion.div

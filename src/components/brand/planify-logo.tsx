@@ -4,12 +4,22 @@ import { cn } from "@/lib/utils";
 const BRAND_NAVY = "#001B44";
 const BRAND_GOLD = "#B38E5D";
 
-const ICON_SIZES = {
-  xs: "h-7 w-7",
-  sm: "h-8 w-8",
-  md: "h-10 w-10",
-  lg: "h-12 w-12",
-  xl: "h-14 w-14",
+/** Icon size in navigation, topbar, sidebar */
+const ICON_PX = {
+  xs: 28,
+  sm: 32,
+  md: 40,
+  lg: 48,
+  xl: 56,
+} as const;
+
+/** Larger icon for stacked hero lockups */
+const LOCKUP_ICON_PX = {
+  xs: 44,
+  sm: 52,
+  md: 64,
+  lg: 80,
+  xl: 96,
 } as const;
 
 const WORD_SIZES = {
@@ -20,41 +30,112 @@ const WORD_SIZES = {
   xl: "text-3xl",
 } as const;
 
+const LOCKUP_WORD_SIZES = {
+  xs: "text-lg",
+  sm: "text-xl",
+  md: "text-2xl",
+  lg: "text-3xl",
+  xl: "text-4xl sm:text-5xl",
+} as const;
+
 export type PlanifyLogoProps = {
-  /** `full` icon + wordmark; `icon` only; `lockup` stacked icon, wordmark, optional slogan */
   variant?: "full" | "icon" | "lockup";
-  size?: keyof typeof ICON_SIZES;
+  size?: keyof typeof ICON_PX;
   slogan?: string;
   className?: string;
   href?: string;
   onDark?: boolean;
 };
 
+function PlanifyIconSvg({
+  px,
+  className,
+}: {
+  px: number;
+  className?: string;
+}) {
+  return (
+    <svg
+      width={px}
+      height={px}
+      viewBox="-4 -4 72 72"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      className={cn("shrink-0 overflow-visible", className)}
+    >
+      <rect x="0" y="0" width="64" height="64" rx="14" fill={BRAND_NAVY} />
+      <rect
+        x="13"
+        y="13"
+        width="38"
+        height="38"
+        rx="8"
+        stroke={BRAND_GOLD}
+        strokeWidth="2"
+        fill="none"
+      />
+      <path
+        d="M19 18v8"
+        stroke={BRAND_GOLD}
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+      <circle cx="19" cy="16" r="1.85" fill={BRAND_GOLD} />
+      <path
+        d="M45 46V38"
+        stroke={BRAND_GOLD}
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+      <circle cx="45" cy="48" r="1.85" fill={BRAND_GOLD} />
+      <path
+        d="M24 35.5 31.5 44.5 42 26"
+        stroke="#FFFFFF"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M39.5 25 45.5 19"
+        stroke="#FFFFFF"
+        strokeWidth="2.25"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function StylizedA({ className }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 28 32"
+      viewBox="-2 -2 32 36"
       aria-hidden
-      className={cn("inline-block h-[0.92em] w-[0.62em] align-[-0.08em]", className)}
+      className={cn(
+        "inline-block h-[1em] w-[0.68em] shrink-0 overflow-visible",
+        className,
+      )}
     >
       <path
-        d="M3 28 L14 4 L25 28"
+        d="M5 30 L16 6 L27 30"
         stroke={BRAND_GOLD}
-        strokeWidth="3.4"
+        strokeWidth="3.2"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
       />
-      <circle cx="14" cy="23.5" r="2.1" fill={BRAND_GOLD} />
+      <circle cx="16" cy="25" r="2" fill={BRAND_GOLD} />
     </svg>
   );
 }
 
 function Wordmark({
   size,
+  lockup,
   onDark,
 }: {
-  size: keyof typeof ICON_SIZES;
+  size: keyof typeof ICON_PX;
+  lockup?: boolean;
   onDark?: boolean;
 }) {
   const letterColor = onDark ? "#FFFFFF" : BRAND_NAVY;
@@ -62,14 +143,15 @@ function Wordmark({
   return (
     <span
       className={cn(
-        "font-display inline-flex items-baseline font-extrabold uppercase leading-none tracking-[0.1em]",
-        WORD_SIZES[size],
+        "font-display inline-flex items-center gap-0 overflow-visible py-0.5",
+        "font-extrabold uppercase leading-[1.15] tracking-[0.08em]",
+        lockup ? LOCKUP_WORD_SIZES[size] : WORD_SIZES[size],
       )}
       style={{ color: letterColor }}
     >
-      <span>PL</span>
+      <span className="shrink-0">PL</span>
       <StylizedA />
-      <span>NIFY</span>
+      <span className="shrink-0">NIFY</span>
     </span>
   );
 }
@@ -77,18 +159,14 @@ function Wordmark({
 export function PlanifyIcon({
   className,
   size = "md",
+  lockup = false,
 }: {
   className?: string;
-  size?: keyof typeof ICON_SIZES;
+  size?: keyof typeof ICON_PX;
+  lockup?: boolean;
 }) {
-  return (
-    <img
-      src="/brand/planify-icon.svg"
-      alt=""
-      aria-hidden
-      className={cn("shrink-0", ICON_SIZES[size], className)}
-    />
-  );
+  const px = lockup ? LOCKUP_ICON_PX[size] : ICON_PX[size];
+  return <PlanifyIconSvg px={px} className={className} />;
 }
 
 export function PlanifyLogo({
@@ -104,21 +182,26 @@ export function PlanifyLogo({
   const content = (
     <span
       className={cn(
-        "inline-flex",
+        "inline-flex overflow-visible",
         isLockup
-          ? "flex-col items-center gap-3 text-center"
+          ? "flex-col items-center gap-4 text-center"
           : "items-center gap-2.5",
         className,
       )}
     >
-      <PlanifyIcon size={size} />
+      <PlanifyIcon size={size} lockup={isLockup} />
       {variant !== "icon" && (
-        <span className={cn(isLockup && "flex flex-col items-center gap-1")}>
-          <Wordmark size={size} onDark={onDark} />
+        <span
+          className={cn(
+            "overflow-visible",
+            isLockup && "flex flex-col items-center gap-1.5",
+          )}
+        >
+          <Wordmark size={size} lockup={isLockup} onDark={onDark} />
           {isLockup && slogan && (
             <span
               className={cn(
-                "font-display text-[10px] font-semibold uppercase tracking-[0.2em] sm:text-xs",
+                "max-w-xs font-display text-[10px] font-semibold uppercase leading-snug tracking-[0.18em] sm:text-xs",
                 onDark ? "text-white/70" : "text-muted-foreground",
               )}
             >
@@ -132,7 +215,11 @@ export function PlanifyLogo({
 
   if (href) {
     return (
-      <Link to={href} className="focus-ring w-fit rounded-lg" aria-label="Planify home">
+      <Link
+        to={href}
+        className="focus-ring inline-flex overflow-visible rounded-lg"
+        aria-label="Planify home"
+      >
         {content}
       </Link>
     );
