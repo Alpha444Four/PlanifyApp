@@ -1,12 +1,26 @@
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import {
+  BRAND_GOLD,
+  BRAND_NAVY,
+  PlanifyBrandLockup,
+  PlanifyIconMark,
+} from "@/components/brand/planify-icon-mark";
 
-const ICON_SIZES = {
-  xs: "h-7 w-7",
-  sm: "h-8 w-8",
-  md: "h-10 w-10",
-  lg: "h-12 w-12",
-  xl: "h-14 w-14",
+const ICON_PX = {
+  xs: 28,
+  sm: 32,
+  md: 40,
+  lg: 48,
+  xl: 56,
+} as const;
+
+const LOCKUP_WIDTH = {
+  xs: 140,
+  sm: 168,
+  md: 200,
+  lg: 240,
+  xl: 280,
 } as const;
 
 const WORD_SIZES = {
@@ -18,39 +32,57 @@ const WORD_SIZES = {
 } as const;
 
 export type PlanifyLogoProps = {
-  /** `full` icon + wordmark; `icon` only; `lockup` includes slogan */
   variant?: "full" | "icon" | "lockup";
-  size?: keyof typeof ICON_SIZES;
+  size?: keyof typeof ICON_PX;
   slogan?: string;
   className?: string;
   href?: string;
   onDark?: boolean;
 };
 
+function StylizedA({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="-2 -2 32 36"
+      aria-hidden
+      className={cn(
+        "block h-[1em] w-[0.68em] shrink-0",
+        className,
+      )}
+    >
+      <path
+        d="M5 30 L16 6 L27 30"
+        stroke={BRAND_GOLD}
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      <circle cx="16" cy="25" r="2" fill={BRAND_GOLD} />
+    </svg>
+  );
+}
+
 function Wordmark({
   size,
   onDark,
 }: {
-  size: keyof typeof ICON_SIZES;
+  size: keyof typeof ICON_PX;
   onDark?: boolean;
 }) {
+  const letterColor = onDark ? "#FFFFFF" : BRAND_NAVY;
+
   return (
     <span
       className={cn(
-        "font-display font-extrabold uppercase leading-none tracking-[0.12em]",
+        "inline-flex items-center gap-0 font-display text-base font-extrabold uppercase leading-none tracking-[0.08em]",
         WORD_SIZES[size],
-        onDark ? "text-white" : "text-[#1E3A8A] dark:text-white",
       )}
+      style={{ color: letterColor }}
     >
-      PL
-      <span className="relative inline-block">
-        A
-        <span
-          aria-hidden
-          className="absolute left-1/2 top-[0.42em] h-[0.2em] w-[0.2em] -translate-x-1/2 rounded-full bg-[#C9A86C]"
-        />
-      </span>
-      NIFY
+      <span className="shrink-0">PL</span>
+      <StylizedA />
+      <span className="shrink-0">NIFY</span>
     </span>
   );
 }
@@ -60,14 +92,12 @@ export function PlanifyIcon({
   size = "md",
 }: {
   className?: string;
-  size?: keyof typeof ICON_SIZES;
+  size?: keyof typeof ICON_PX;
 }) {
   return (
-    <img
-      src="/brand/planify-icon.svg"
-      alt=""
-      aria-hidden
-      className={cn("shrink-0 rounded-[22%] shadow-glow", ICON_SIZES[size], className)}
+    <PlanifyIconMark
+      size={ICON_PX[size]}
+      className={className}
     />
   );
 }
@@ -80,43 +110,50 @@ export function PlanifyLogo({
   href,
   onDark,
 }: PlanifyLogoProps) {
+  const isLockup = variant === "lockup";
+
+  if (isLockup) {
+    const lockup = (
+      <PlanifyBrandLockup
+        width={LOCKUP_WIDTH[size]}
+        slogan={slogan}
+        onDark={onDark}
+        className={className}
+      />
+    );
+    if (href) {
+      return (
+        <Link
+          to={href}
+          className="focus-ring inline-block rounded-lg"
+          aria-label="Planify home"
+        >
+          {lockup}
+        </Link>
+      );
+    }
+    return lockup;
+  }
+
   const content = (
     <span
       className={cn(
         "inline-flex items-center gap-2.5",
-        variant === "lockup" && "flex-col items-start gap-1.5",
         className,
       )}
     >
       <PlanifyIcon size={size} />
-      {variant !== "icon" && (
-        <span
-          className={cn(
-            variant === "lockup" && "flex flex-col gap-0.5",
-            variant === "lockup" && className?.includes("items-center")
-              ? "items-center text-center"
-              : variant === "lockup" && "items-start",
-          )}
-        >
-          <Wordmark size={size} onDark={onDark} />
-          {variant === "lockup" && slogan && (
-            <span
-              className={cn(
-                "font-display text-[10px] font-semibold uppercase tracking-[0.2em] sm:text-xs",
-                onDark ? "text-white/70" : "text-muted-foreground",
-              )}
-            >
-              {slogan}
-            </span>
-          )}
-        </span>
-      )}
+      {variant !== "icon" && <Wordmark size={size} onDark={onDark} />}
     </span>
   );
 
   if (href) {
     return (
-      <Link to={href} className="focus-ring w-fit rounded-lg" aria-label="Planify home">
+      <Link
+        to={href}
+        className="focus-ring inline-flex rounded-lg"
+        aria-label="Planify home"
+      >
         {content}
       </Link>
     );
