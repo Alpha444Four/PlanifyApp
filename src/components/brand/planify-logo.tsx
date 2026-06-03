@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
+const BRAND_NAVY = "#001B44";
+const BRAND_GOLD = "#B38E5D";
+
 const ICON_SIZES = {
   xs: "h-7 w-7",
   sm: "h-8 w-8",
@@ -18,7 +21,7 @@ const WORD_SIZES = {
 } as const;
 
 export type PlanifyLogoProps = {
-  /** `full` icon + wordmark; `icon` only; `lockup` includes slogan */
+  /** `full` icon + wordmark; `icon` only; `lockup` stacked icon, wordmark, optional slogan */
   variant?: "full" | "icon" | "lockup";
   size?: keyof typeof ICON_SIZES;
   slogan?: string;
@@ -27,6 +30,26 @@ export type PlanifyLogoProps = {
   onDark?: boolean;
 };
 
+function StylizedA({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 28 32"
+      aria-hidden
+      className={cn("inline-block h-[0.92em] w-[0.62em] align-[-0.08em]", className)}
+    >
+      <path
+        d="M3 28 L14 4 L25 28"
+        stroke={BRAND_GOLD}
+        strokeWidth="3.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      <circle cx="14" cy="23.5" r="2.1" fill={BRAND_GOLD} />
+    </svg>
+  );
+}
+
 function Wordmark({
   size,
   onDark,
@@ -34,23 +57,19 @@ function Wordmark({
   size: keyof typeof ICON_SIZES;
   onDark?: boolean;
 }) {
+  const letterColor = onDark ? "#FFFFFF" : BRAND_NAVY;
+
   return (
     <span
       className={cn(
-        "font-display font-extrabold uppercase leading-none tracking-[0.12em]",
+        "font-display inline-flex items-baseline font-extrabold uppercase leading-none tracking-[0.1em]",
         WORD_SIZES[size],
-        onDark ? "text-white" : "text-[#1E3A8A] dark:text-white",
       )}
+      style={{ color: letterColor }}
     >
-      PL
-      <span className="relative inline-block">
-        A
-        <span
-          aria-hidden
-          className="absolute left-1/2 top-[0.42em] h-[0.2em] w-[0.2em] -translate-x-1/2 rounded-full bg-[#C9A86C]"
-        />
-      </span>
-      NIFY
+      <span>PL</span>
+      <StylizedA />
+      <span>NIFY</span>
     </span>
   );
 }
@@ -67,7 +86,7 @@ export function PlanifyIcon({
       src="/brand/planify-icon.svg"
       alt=""
       aria-hidden
-      className={cn("shrink-0 rounded-[22%] shadow-glow", ICON_SIZES[size], className)}
+      className={cn("shrink-0", ICON_SIZES[size], className)}
     />
   );
 }
@@ -80,26 +99,23 @@ export function PlanifyLogo({
   href,
   onDark,
 }: PlanifyLogoProps) {
+  const isLockup = variant === "lockup";
+
   const content = (
     <span
       className={cn(
-        "inline-flex items-center gap-2.5",
-        variant === "lockup" && "flex-col items-start gap-1.5",
+        "inline-flex",
+        isLockup
+          ? "flex-col items-center gap-3 text-center"
+          : "items-center gap-2.5",
         className,
       )}
     >
       <PlanifyIcon size={size} />
       {variant !== "icon" && (
-        <span
-          className={cn(
-            variant === "lockup" && "flex flex-col gap-0.5",
-            variant === "lockup" && className?.includes("items-center")
-              ? "items-center text-center"
-              : variant === "lockup" && "items-start",
-          )}
-        >
+        <span className={cn(isLockup && "flex flex-col items-center gap-1")}>
           <Wordmark size={size} onDark={onDark} />
-          {variant === "lockup" && slogan && (
+          {isLockup && slogan && (
             <span
               className={cn(
                 "font-display text-[10px] font-semibold uppercase tracking-[0.2em] sm:text-xs",

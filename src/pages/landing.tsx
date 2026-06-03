@@ -82,7 +82,6 @@ export default function LandingPage() {
               variant="lockup"
               size="xl"
               slogan={t("brand.sloganFull")}
-              className="flex-col items-center text-center"
             />
           </motion.div>
           <motion.div
